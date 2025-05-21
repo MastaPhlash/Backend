@@ -30,6 +30,10 @@ regd_users.post("/login", (req,res) => {
   if (!username || !password) {
       return res.status(404).json({message: "Error logging in"});
   }
+  // Prevent login if user is not registered
+  if (!isValid(username)) {
+      return res.status(401).json({message: "User not registered"});
+  }
   if (authenticatedUser(username,password)) {
     let accessToken = jwt.sign({
       data: password
