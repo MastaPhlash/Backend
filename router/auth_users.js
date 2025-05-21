@@ -35,12 +35,22 @@ regd_users.post("/login", (req,res) => {
       data: password
     }, 'access', { expiresIn: 4000 });
     req.session.authorization = {
-      accessToken,username
-  }
-  return res.status(200).send("User successfully logged in");
+      accessToken,
+      username // always set username here
+    }
+    req.session.save(() => { // ensure session is saved before responding
+      return res.status(200).send("User successfully logged in");
+    });
   } else {
     return res.status(208).json({message: "Invalid Login. Check username and password"});
   }
+});
+
+// Logout endpoint to destroy session
+regd_users.post("/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.status(200).json({message: "Logged out"});
+  });
 });
 
 // Add a book review
@@ -48,7 +58,10 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
   //Write your code here
   const isbn = req.params.isbn;
   const review = req.body.review;
-  const username = req.session.authorization.username;
+  const username = req.session.authorization && req.session.authorization.username;
+  if (!username) {
+    return res.status(401).json({message: "Not logged in"});
+  }
   if (books[isbn]) {
       let book = books[isbn];
       book.reviews[username] = review;
@@ -61,7 +74,10 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
 
 regd_users.delete("/auth/review/:isbn", (req, res) => {
     const isbn = req.params.isbn;
-    const username = req.session.authorization.username;
+    const username = req.session.authorization && req.session.authorization.username;
+    if (!username) {
+      return res.status(401).json({message: "Not logged in"});
+    }
     if (books[isbn]) {
         let book = books[isbn];
         delete book.reviews[username];

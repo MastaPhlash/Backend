@@ -3,8 +3,9 @@ const jwt = require('jsonwebtoken');
 const session = require('express-session')
 const customer_routes = require('./router/auth_users.js').authenticated;
 const genl_routes = require('./router/general.js').general;
+const path = require('path');
 let users = []
-let books = require('./router/booksdb.js'); // add this line to import books
+let books = require('./router/booksdb.js');
 
 //Function to check if the user exists
 const doesExist = (username)=>{
@@ -33,7 +34,14 @@ const app = express();
 
 app.use(express.json());
 
-app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}))
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.use("/customer", session({
+  secret: "fingerprint_customer",
+  resave: true,
+  saveUninitialized: true
+}));
 
 app.use("/customer/auth/*", function auth(req,res,next){
 //Write the authenication mechanism here
@@ -53,7 +61,7 @@ if(req.session.authorization) { //get the authorization object stored in the ses
  }
 });
  
-const PORT = 5000; // Backend API runs on port 5000
+const PORT = 5000; // Serve both frontend and backend on 5000
 
 app.use("/customer", customer_routes);
 app.use("/", genl_routes);
@@ -63,4 +71,9 @@ app.get('/books', (req, res) => {
   res.json(books);
 });
 
-app.listen(PORT,()=>console.log("Backend API server is running on port 5000"));
+// Always serve index.html for root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.listen(PORT,()=>console.log("Server is running on port 5000"));

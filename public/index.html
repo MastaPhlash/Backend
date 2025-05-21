@@ -197,6 +197,7 @@
       const res = await fetch('/customer/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password }),
       });
       if (res.ok) {
@@ -208,7 +209,11 @@
       }
     };
 
-    document.getElementById('logoutBtn').onclick = function() {
+    document.getElementById('logoutBtn').onclick = async function() {
+      await fetch('/customer/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
       loggedInUser = null;
       showLoginForm();
     };
@@ -296,6 +301,7 @@
               const res = await fetch(`/customer/auth/review/${isbn}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ review: reviewText }),
               });
               if (res.ok) {
