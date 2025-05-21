@@ -4,6 +4,8 @@ const session = require('express-session')
 const customer_routes = require('./router/auth_users.js').authenticated;
 const genl_routes = require('./router/general.js').general;
 let users = []
+let books = require('./router/booksdb.js'); // add this line to import books
+
 //Function to check if the user exists
 const doesExist = (username)=>{
   let userswithsamename = users.filter((user)=>{
@@ -51,9 +53,14 @@ if(req.session.authorization) { //get the authorization object stored in the ses
  }
 });
  
-const PORT =5000;
+const PORT = 5000; // Backend API runs on port 5000
 
 app.use("/customer", customer_routes);
 app.use("/", genl_routes);
 
-app.listen(PORT,()=>console.log("Server is running"));
+// Backend API endpoint for books
+app.get('/books', (req, res) => {
+  res.json(books);
+});
+
+app.listen(PORT,()=>console.log("Backend API server is running on port 5000"));

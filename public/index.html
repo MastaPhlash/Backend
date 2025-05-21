@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Book Database</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; background: #f8f9fa; }
+    h1 { color: #333; }
+    .login-box {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      width: 320px;
+      margin: 0 auto 2em auto;
+      padding: 1.5em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .login-box input {
+      margin-bottom: 1em;
+      padding: 0.5em;
+      width: 90%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .login-box button {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.5em 1.5em;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.2s;
+    }
+    .login-box button:hover {
+      background: #0056b3;
+    }
+    .login-status {
+      margin-bottom: 1em;
+      color: #007bff;
+      font-weight: bold;
+    }
+    .error-msg {
+      color: #c00;
+      margin-bottom: 1em;
+    }
+    .logout-btn {
+      background: #dc3545;
+      margin-top: 1em;
+    }
+    .logout-btn:hover {
+      background: #a71d2a;
+    }
+    .book-list { display: flex; flex-wrap: wrap; gap: 2em; }
+    .book-card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      width: 320px;
+      padding: 1.5em;
+      margin-bottom: 1em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: box-shadow 0.2s;
+    }
+    .book-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .cover {
+      width: 120px;
+      height: 180px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      margin-bottom: 1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #aaa;
+      font-size: 1.2em;
+      font-style: italic;
+    }
+    .book-title { font-size: 1.2em; font-weight: bold; margin-bottom: 0.5em; text-align: center; }
+    .book-author { color: #555; margin-bottom: 0.5em; }
+    .book-isbn { color: #888; font-size: 0.95em; margin-bottom: 1em; }
+    .reviews-toggle {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.4em 1em;
+      cursor: pointer;
+      margin-bottom: 0.5em;
+      font-size: 0.95em;
+      transition: background 0.2s;
+    }
+    .reviews-toggle:hover {
+      background: #0056b3;
+    }
+    .reviews-section {
+      width: 100%;
+      display: none;
+      margin-top: 0.5em;
+      background: #f1f3f4;
+      border-radius: 4px;
+      padding: 0.7em 1em;
+    }
+    .reviews-section.active {
+      display: block;
+    }
+    .review-user { font-weight: bold; }
+    .no-reviews { color: #888; font-style: italic; }
+    .review-form {
+      margin-top: 1em;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      background: #f8f9fa;
+      border-radius: 4px;
+      padding: 0.7em 1em;
+    }
+    .review-form textarea {
+      resize: vertical;
+      min-height: 40px;
+      margin-bottom: 0.5em;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      font-size: 1em;
+    }
+    .review-form button {
+      align-self: flex-end;
+      background: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.4em 1.2em;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.2s;
+    }
+    .review-form button:hover {
+      background: #1e7e34;
+    }
+    .review-success {
+      color: #28a745;
+      font-size: 0.95em;
+      margin-bottom: 0.5em;
+    }
+    .review-error {
+      color: #c00;
+      font-size: 0.95em;
+      margin-bottom: 0.5em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Book Database</h1>
+  <div class="login-box" id="loginBox">
+    <div class="login-status" id="loginStatus" style="display:none;"></div>
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Username" required autocomplete="username">
+      <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
+      <button type="submit">Login</button>
+      <div class="error-msg" id="loginError"></div>
+    </form>
+    <button class="logout-btn" id="logoutBtn" style="display:none;">Logout</button>
+  </div>
+  <div class="book-list" id="books"></div>
+  <script>
+    // Simple session check (not secure, for demo only)
+    let loggedInUser = null;
+
+    function showLoginStatus(username) {
+      document.getElementById('loginStatus').style.display = 'block';
+      document.getElementById('loginStatus').textContent = `Logged in as: ${username}`;
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('logoutBtn').style.display = 'block';
+      fetchBooks(); // Refresh books to show review forms
+    }
+
+    function showLoginForm() {
+      document.getElementById('loginStatus').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('loginError').textContent = '';
+      fetchBooks(); // Refresh books to hide review forms
+    }
+
+    document.getElementById('loginForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const res = await fetch('/customer/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (res.ok) {
+        loggedInUser = username;
+        showLoginStatus(username);
+      } else {
+        const data = await res.json();
+        document.getElementById('loginError').textContent = data.message || 'Login failed';
+      }
+    };
+
+    document.getElementById('logoutBtn').onclick = function() {
+      loggedInUser = null;
+      showLoginForm();
+    };
+
+    async function fetchBooks() {
+      const res = await fetch('/books');
+      const data = await res.json();
+      const booksDiv = document.getElementById('books');
+      booksDiv.innerHTML = '';
+      Object.entries(data).forEach(([isbn, book]) => {
+        const card = document.createElement('div');
+        card.className = 'book-card';
+
+        // Placeholder cover (could be replaced with real images if available)
+        const cover = document.createElement('div');
+        cover.className = 'cover';
+        cover.textContent = 'No Cover';
+
+        const title = document.createElement('div');
+        title.className = 'book-title';
+        title.textContent = book.title;
+
+        const author = document.createElement('div');
+        author.className = 'book-author';
+        author.textContent = `Author: ${book.author}`;
+
+        const isbnDiv = document.createElement('div');
+        isbnDiv.className = 'book-isbn';
+        isbnDiv.textContent = `ISBN: ${isbn}`;
+
+        // Reviews toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'reviews-toggle';
+        toggleBtn.textContent = 'Show Reviews';
+
+        // Reviews section
+        const reviewsSection = document.createElement('div');
+        reviewsSection.className = 'reviews-section';
+
+        if (book.reviews && Object.keys(book.reviews).length) {
+          const ul = document.createElement('ul');
+          Object.entries(book.reviews).forEach(([user, review]) => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="review-user">${user}:</span> ${review}`;
+            ul.appendChild(li);
+          });
+          reviewsSection.appendChild(ul);
+        } else {
+          const noReviews = document.createElement('div');
+          noReviews.className = 'no-reviews';
+          noReviews.textContent = 'No reviews yet.';
+          reviewsSection.appendChild(noReviews);
+        }
+
+        toggleBtn.onclick = () => {
+          reviewsSection.classList.toggle('active');
+          toggleBtn.textContent = reviewsSection.classList.contains('active') ? 'Hide Reviews' : 'Show Reviews';
+        };
+
+        card.appendChild(cover);
+        card.appendChild(title);
+        card.appendChild(author);
+        card.appendChild(isbnDiv);
+        card.appendChild(toggleBtn);
+        card.appendChild(reviewsSection);
+
+        // --- Add review form if logged in ---
+        if (loggedInUser) {
+          const reviewForm = document.createElement('form');
+          reviewForm.className = 'review-form';
+          reviewForm.innerHTML = `
+            <textarea placeholder="Leave your review..." required></textarea>
+            <button type="submit">Submit Review</button>
+            <div class="review-success" style="display:none;"></div>
+            <div class="review-error" style="display:none;"></div>
+          `;
+          reviewForm.onsubmit = async function(e) {
+            e.preventDefault();
+            const reviewText = reviewForm.querySelector('textarea').value;
+            const successMsg = reviewForm.querySelector('.review-success');
+            const errorMsg = reviewForm.querySelector('.review-error');
+            successMsg.style.display = 'none';
+            errorMsg.style.display = 'none';
+            try {
+              const res = await fetch(`/customer/auth/review/${isbn}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ review: reviewText }),
+              });
+              if (res.ok) {
+                successMsg.textContent = 'Review submitted!';
+                successMsg.style.display = 'block';
+                errorMsg.style.display = 'none';
+                fetchBooks(); // Refresh reviews
+              } else {
+                const data = await res.json();
+                errorMsg.textContent = data.message || 'Failed to submit review';
+                errorMsg.style.display = 'block';
+                successMsg.style.display = 'none';
+              }
+            } catch (err) {
+              errorMsg.textContent = 'Network error';
+              errorMsg.style.display = 'block';
+              successMsg.style.display = 'none';
+            }
+          };
+          card.appendChild(reviewForm);
+        }
+
+        booksDiv.appendChild(card);
+      });
+    }
+
+    // On load, show login form and fetch books
+    showLoginForm();
+    fetchBooks();
+  </script>
+</body>
+</html>
