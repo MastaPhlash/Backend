@@ -66,9 +66,28 @@ const PORT = 5000; // Serve both frontend and backend on 5000
 app.use("/customer", customer_routes);
 app.use("/", genl_routes);
 
-// Backend API endpoint for books
+// Logging middleware for all requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Backend API endpoint for books with error handling
 app.get('/books', (req, res) => {
-  res.json(books);
+  try {
+    if (!books || Object.keys(books).length === 0) {
+      return res.status(404).json({ message: 'No books found.' });
+    }
+    res.json(books);
+  } catch (error) {
+    console.error('Error fetching books:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
 });
 
 // Always serve index.html for root
