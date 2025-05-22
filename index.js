@@ -90,6 +90,37 @@ app.get('/books', (req, res) => {
   }
 });
 
+// Add or update a review for a book
+app.post('/books/:isbn/review', (req, res) => {
+  const { isbn } = req.params;
+  const { username, review, rating } = req.body;
+  if (!username || !review || typeof rating !== 'number') {
+    return res.status(400).json({ message: 'Username, review, and numeric rating are required.' });
+  }
+  const book = books[isbn];
+  if (!book) {
+    return res.status(404).json({ message: 'Book not found.' });
+  }
+  if (!book.reviews) book.reviews = {};
+  book.reviews[username] = { review, rating };
+  res.json({ message: 'Review added/updated successfully.', reviews: book.reviews });
+});
+
+// Delete a user's review for a book
+app.delete('/books/:isbn/review', (req, res) => {
+  const { isbn } = req.params;
+  const { username } = req.body;
+  if (!username) {
+    return res.status(400).json({ message: 'Username is required.' });
+  }
+  const book = books[isbn];
+  if (!book || !book.reviews || !book.reviews[username]) {
+    return res.status(404).json({ message: 'Review not found.' });
+  }
+  delete book.reviews[username];
+  res.json({ message: 'Review deleted successfully.', reviews: book.reviews });
+});
+
 // Always serve index.html for root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
