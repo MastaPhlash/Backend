@@ -131,6 +131,14 @@
       padding: 0.5em;
       font-size: 1em;
     }
+    .review-form input[type="number"] {
+      margin-bottom: 0.5em;
+      padding: 0.5em;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1em;
+    }
     .review-form button {
       align-self: flex-end;
       background: #28a745;
@@ -255,9 +263,9 @@
 
         if (book.reviews && Object.keys(book.reviews).length) {
           const ul = document.createElement('ul');
-          Object.entries(book.reviews).forEach(([user, review]) => {
+          Object.entries(book.reviews).forEach(([user, reviewObj]) => {
             const li = document.createElement('li');
-            li.innerHTML = `<span class="review-user">${user}:</span> ${review}`;
+            li.innerHTML = `<span class="review-user">${user}:</span> ${reviewObj.review} <b>(Rating: ${reviewObj.rating})</b>`;
             ul.appendChild(li);
           });
           reviewsSection.appendChild(ul);
@@ -286,6 +294,7 @@
           reviewForm.className = 'review-form';
           reviewForm.innerHTML = `
             <textarea placeholder="Leave your review..." required></textarea>
+            <input type="number" min="1" max="5" step="1" placeholder="Rating (1-5)" required style="margin-bottom:0.5em;">
             <button type="submit">Submit Review</button>
             <div class="review-success" style="display:none;"></div>
             <div class="review-error" style="display:none;"></div>
@@ -293,19 +302,20 @@
           reviewForm.onsubmit = async function(e) {
             e.preventDefault();
             const reviewText = reviewForm.querySelector('textarea').value;
+            const ratingValue = parseInt(reviewForm.querySelector('input[type="number"]').value, 10);
             const successMsg = reviewForm.querySelector('.review-success');
             const errorMsg = reviewForm.querySelector('.review-error');
             successMsg.style.display = 'none';
             errorMsg.style.display = 'none';
             try {
-              const res = await fetch(`/customer/auth/review/${isbn}`, {
-                method: 'PUT',
+              const res = await fetch(`/books/${isbn}/review`, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ review: reviewText }),
+                body: JSON.stringify({ username: loggedInUser, review: reviewText, rating: ratingValue }),
               });
               if (res.ok) {
-                successMsg.textContent = 'Review submitted!';
+                const data = await res.json();
+                successMsg.textContent = data.message || 'Review submitted!';
                 successMsg.style.display = 'block';
                 errorMsg.style.display = 'none';
                 fetchBooks(); // Refresh reviews
